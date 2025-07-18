@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Window Manager</title>
+  </head>
+  <body>
+    <h1>Window Manager extension</h1>
+
+    <div>
+    
+      <button id="refresh" type="button">Refresh</button>
+
+      <p>Manage your windows here</p>
+
+      <input name="currentWindowName" type="text" id="currentWindowName"/>
+
+      <button id="save-button" type="button">Save</button>
+    </div>
+
+    <br>
+
+    <div style="visibility: hidden;" id="open-window-container">
+      <select name="saved-windows" id="saved-windows-dropdown"></select>
+
+      <button id="open-selected-saved-window" type="button">Open</button>
+      <button id="remove-selected-saved-window" type="button">Remove</button>
+    </div>
+  </body>
+  <script src="window-manager.js"></script>
+</html>
