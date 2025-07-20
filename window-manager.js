@@ -1,92 +1,227 @@
+let lastEventTime = 0;
 
-async function getCurrentWindowUrls() {
-    let window = await chrome.windows.get(chrome.windows.WINDOW_ID_CURRENT, { populate: true });
-    console.log('the current window: ', window);
-    return window.tabs.map(e => e.url);
+importScripts('common.js');
+
+let openedWindowName = '';
+
+async function handleWindowOpenningRequest(windowNameToOpen) {
+    openedWindowName = windowNameToOpen;
+    await chrome.windows.create({url: (await getSavedWindows()).find(e => e.name == windowNameToOpen).tabs.map(e => e.url)});
 }
 
-async function openSavedWindow() {
-    const dropdown = document.getElementById("saved-windows-dropdown");
-    const savedWindowName = dropdown.options[dropdown.selectedIndex].value;
-    await chrome.windows.create({url: (await chrome.storage.local.get('savedWindows'))['savedWindows'][savedWindowName]});
+function addToArrayIfNotExists(arr, elem) {
+    let newArr = [];
+    for (let e of arr) {
+        if (e == elem) {
+            return arr;
+        }
+        else {
+            newArr.push(e);
+        }
+    }
+    newArr.push(elem);
+
+    return newArr;
 }
 
-async function refresh() {
-    location.replace(location);
+async function handleWindowSavingRequest(windowToSave) {
+    await persist({selectedWindow: {
+        name: windowToSave.name,
+        id: windowToSave.id
+    }});
+    console.log('saved selected window!!');
+    let savedWindows = await getSavedWindows();
+    let savedWindowIndex = savedWindows.findIndex(e => e.name == windowToSave.name);
+    if (savedWindowIndex !== -1) {
+        let savedWindow = savedWindows[savedWindowIndex];
+        savedWindow.ids = addToArrayIfNotExists(savedWindow.ids, windowToSave.id);
+        savedWindow.tabs = windowToSave.tabs;
+        savedWindows[savedWindowIndex] = savedWindow;
+    }
+    else {
+        savedWindows.push({
+            ids: [windowToSave.id],
+            name: windowToSave.name,
+            tabs: windowToSave.tabs
+        });
+    }
+    await persist({savedWindows});
+    console.log('saved windows!!');
 }
 
-async function saveWindow() {
-    const windowName = document.getElementById('currentWindowName').value;
-    let savedWindows = (await chrome.storage.local.get('savedWindows'))['savedWindows'] || {};
-    console.log('window name to save: ', windowName);
-    const urls = await getCurrentWindowUrls();
-    savedWindows[windowName] = urls;
-    await chrome.storage.local.set({savedWindows});
-    console.log('final saved windows: ', savedWindows);
-    const returned = (await chrome.storage.local.get('savedWindows'))['savedWindows'];
-    console.log('saved from api: ',  returned);
-    let dropdown = document.getElementById("saved-windows-dropdown");
-    addOptionToDropdown(dropdown, windowName);
-    if (Object.keys(savedWindows).length == 1) {
-        document.getElementById("open-window-container").style.visibility = 'visible';
+async function handleWindowDeletionRequest(windowNameToDelete) {
+    let savedWindows = await getSavedWindows();
+    savedWindows.splice(savedWindows.findIndex(e => e.name == windowNameToDelete), 1);
+    await persist({savedWindows});
+}
+
+async function handleRequest(request) {
+    if (request.windowToSave) {
+        await handleWindowSavingRequest(request.windowToSave);
+    }
+    else if (request.windowNameToOpen) {
+        await handleWindowOpenningRequest(request.windowNameToOpen);
+    }
+    else if (request.windowNameToDelete) {
+        await handleWindowDeletionRequest(request.windowNameToDelete);
     }
 }
 
-async function removeWindow() {
-    let dropdown = document.getElementById("saved-windows-dropdown");
-    const selectedWindowName = dropdown.options[dropdown.selectedIndex].value;
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    let eventTime = Date.now();
+    console.log('request sent: ', request);
+    console.log('eventTime: ', eventTime);
+    if (eventTime > lastEventTime) {
+        handleRequest(request).then(() => sendResponse('done'));
+        return true;
+    }
+});
 
-    if (confirm('Are you sure you want to remove this saved window?') == true) {
-        let savedWindows = (await chrome.storage.local.get('savedWindows'))['savedWindows'];
-        delete savedWindows[selectedWindowName];
-        await chrome.storage.local.set({savedWindows});
-        for (let option of dropdown.options) {
-            if (option.value == selectedWindowName) {
-                document.getElementById('dropdown-option-' + selectedWindowName).remove()
+async function tabRemovedListener(tabId, removeInfo) {
+    let savedWindows = await getSavedWindows();
+    console.log('tabRemovedListener savedWindows: ', savedWindows);
+    let savedWindowIndex = savedWindows.findIndex(e => e.ids.includes(removeInfo.windowId));
+    if (savedWindowIndex === -1) {
+        console.log('window not saved so do nothing!!');
+        return;
+    }
+    let savedWindow = savedWindows[savedWindowIndex];
+    savedWindow.tabs.splice(savedWindow.tabs.findIndex(e => e.id == tabId), 1);
+    savedWindows[savedWindowIndex] = savedWindow;
+    await persist({savedWindows});
+}
+
+chrome.tabs.onRemoved.addListener(tabRemovedListener);
+
+async function windowFocusChangeListener() {
+    let eventTime = Date.now();
+    const window = await chrome.windows.get(chrome.windows.WINDOW_ID_CURRENT, { populate: true });
+    const windowId = window.id;
+    let savedWindows = await getSavedWindows();
+    console.log('windowFocusChangeListener savedWindows: ', savedWindows);
+    if (savedWindows.length == 0) {
+        await removeFromStorage('selectedWindow');
+        return;
+    }
+    
+    const savedWindowIndex = savedWindows.findIndex(e => e.ids.includes(windowId));
+
+    if (savedWindowIndex !== -1) {
+        let savedWindow = savedWindows[savedWindowIndex];
+        if (eventTime > lastEventTime) {
+            lastEventTime = eventTime;
+            await persist({selectedWindow: {
+                name: savedWindow.name,
+                id: windowId
+            }});
+            console.log('windowFocusChangeListener found saved window');
+            savedWindow.tabs = window.tabs.map((e) => {return {id: e.id, url: e.url}});
+            savedWindows[savedWindowIndex] = savedWindow;
+            await persist({savedWindows});
+        }
+    }
+    else {
+        await removeFromStorage('selectedWindow');
+        console.log('windowFocusChangeListener No saved window found');
+    }
+}
+
+chrome.windows.onFocusChanged.addListener(windowFocusChangeListener);
+
+async function removeFromStorage(key) {
+    await chrome.storage.local.remove(key);
+}
+
+async function persist(obj) {
+    await chrome.storage.local.set(obj);
+}
+
+async function tabUpdatedListener(tabId, changeInfo, tab) {
+    let window = await chrome.windows.get(tab.windowId, { populate: true });
+    let savedWindows = await getSavedWindows();
+    console.log('tabUpdatedListener savedWindows: ', savedWindows);
+    let savedWindowIndex = savedWindows.findIndex(e => e.ids.includes(window.id));
+    let savedWindow = savedWindows[savedWindowIndex];
+    if (savedWindow) {
+        let savedWindowTabs = savedWindow.tabs;
+        for (let i = 0 ; i < savedWindowTabs.length; i++) {
+            let currentTab = savedWindowTabs[i];
+            if (tabId == currentTab.id) {
+                if (changeInfo.url) {
+                    savedWindowTabs[i].url = changeInfo.url;
+                    savedWindows[savedWindowIndex].tabs = savedWindowTabs;
+                    await persist({savedWindows});
+                }
+                break;
             }
-        }
-
-        if (Object.keys(savedWindows).length == 0) {
-            document.getElementById("open-window-container").style.visibility = 'hidden';
-        }
+        };
     }
 }
 
-function addOptionToDropdown(dropdown, windowName) {
-    let opt = document.createElement('option');
-    opt.value = windowName;
-    opt.id = 'dropdown-option-' + windowName;
-    opt.innerHTML = windowName;
-    dropdown.appendChild(opt);
-}
+chrome.tabs.onUpdated.addListener(tabUpdatedListener);
 
-
-async function loadDropdown() {
-    let savedWindows = await chrome.storage.local.get('savedWindows');
-    console.log('saved windows on load: ' , savedWindows);
-    if (savedWindows['savedWindows'] && Object.keys(savedWindows['savedWindows']).length > 0) {
-        let dropdown = document.getElementById("saved-windows-dropdown");
-        for (let key in savedWindows['savedWindows']) {
-            addOptionToDropdown(dropdown, key);
-        }
-        document.getElementById("open-window-container").style.visibility = 'visible';
+async function windowCreatedListener(window) {
+    chrome.tabs.onCreated.removeListener(tabCreatedListener);
+    let savedWindows = await getSavedWindows();
+    console.log('windowCreatedListener savedWindows: ', savedWindows);
+    const savedWindowIndex = savedWindows.findIndex(e => e.name == openedWindowName);
+    if (savedWindowIndex !== -1) {
+        let savedWindow = savedWindows[savedWindowIndex];
+        await persist({selectedWindow: {
+            name: savedWindow.name,
+            id: window.id
+        }});
+        savedWindow.ids = addToArrayIfNotExists(savedWindows[savedWindowIndex].ids, window.id);
+        savedWindows[savedWindowIndex] = savedWindow;
+        await persist({savedWindows});
     }
+    else {
+        await removeFromStorage('selectedWindow');
+    }
+    
+   
+    chrome.tabs.onCreated.addListener(tabCreatedListener);
 }
 
-let saveButton = document.getElementById('save-button');
+chrome.windows.onCreated.addListener(windowCreatedListener);
 
-let openSavedWindowButton = document.getElementById('open-selected-saved-window');
+async function windowRemovedListener(windowId) {
+    chrome.tabs.onRemoved.removeListener(tabRemovedListener);
+    let savedWindows = await getSavedWindows();
+    console.log('windowRemovedListener savedWindows: ', savedWindows);
+    const savedWindowIndex = savedWindows.findIndex(e => e.ids.includes(windowId));
+    if (savedWindowIndex !== -1) {
+        let savedWindow = savedWindows[savedWindowIndex];
+        let ids = savedWindow.ids;
+        ids.splice(ids.findIndex(e => e == windowId), 1);
+        savedWindow.ids = ids;
+        savedWindows[savedWindowIndex] = savedWindow;
+        await persist({savedWindows});
+        savedWindows = await getSavedWindows();
+        console.log('windowRemovedListener savedWindows end: ', savedWindows);
+    }
+    chrome.tabs.onRemoved.addListener(tabRemovedListener);
+}
 
-saveButton.addEventListener('click', saveWindow);
+chrome.windows.onRemoved.addListener(windowRemovedListener);
 
-openSavedWindowButton.addEventListener('click', openSavedWindow);
+async function tabCreatedListener(tab) {
+    let window = await chrome.windows.get(tab.windowId, { populate: true });
+    let savedWindows = await getSavedWindows();
+    console.log('tabCreatedListener savedWindows: ', savedWindows);
+    let savedWindowIndex = savedWindows.findIndex(e => e.ids.includes(window.id));
+    let savedWindow = savedWindows[savedWindowIndex];
+    if (!savedWindow) {
+        return;
+    }
+    let currentWindowTabs = savedWindow.tabs;
+    let tabExists = currentWindowTabs.findIndex(e => e.id == tab.id) !== -1;
+    if (tabExists) {
+        return;
+    }
+    currentWindowTabs.push({id: tab.id, url: tab.url});
+    savedWindows[savedWindowIndex].tabs = currentWindowTabs;
+    await persist({savedWindows});
+}
 
-let refreshButton = document.getElementById('refresh');
-
-refreshButton.addEventListener('click', refresh);
-
-let removeButton = document.getElementById('remove-selected-saved-window');
-
-removeButton.addEventListener('click', removeWindow);
-
-loadDropdown();
+chrome.tabs.onCreated.addListener(tabCreatedListener);
