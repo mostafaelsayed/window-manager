@@ -29,24 +29,16 @@ let getOpenWindowContainer = function() {
 }
 
 async function getCurrentWindowTabs() {
-    let window = await chrome.windows.get(chrome.windows.WINDOW_ID_CURRENT, { populate: true });
+    let window = await getCurrentWindow();
     console.log('the current window: ', window);
-    return {tabs: window.tabs.map(e => {return {url: e.url, id: e.id}}), windowId: window.id};
+    return {tabs: window.tabs.map(e => {return {url: e.url, id: e.id}})};
 }
 
 async function openSavedWindow() {
+    console.log('openings');
     const dropdown = getSavedWindowsDropdown();
     const savedWindowName = dropdown.options[dropdown.selectedIndex].value;
     await chrome.runtime.sendMessage({windowNameToOpen: savedWindowName});
-}
-
-async function getCurrentSelectedWindow() {
-    let selectedWindow = await chrome.storage.local.get(['selectedWindow']);
-    console.log('retrieved selectedWindow: ', selectedWindow);
-    if (selectedWindow && selectedWindow['selectedWindow']) {
-        return selectedWindow['selectedWindow'];
-    }
-    return undefined;
 }
 
 async function saveWindow() {
@@ -56,18 +48,25 @@ async function saveWindow() {
     const windowTabs = await getCurrentWindowTabs();
     let windowExists = savedWindows.findIndex(e => e.name == windowName) !== -1;
     if (windowExists) {
-        if (!confirm('Window with name ' + windowName + ' already exists. Overwrite it?')) {
+        if (!confirm(`Window with name '${windowName}' already exists. Overwrite it?`)) {
             return;
         }
     }
-    if (!windowExists) {
-        addOptionToDropdown(windowName);
-    }
-    await chrome.runtime.sendMessage({ windowToSave: {
+    
+    let res = await chrome.runtime.sendMessage({ windowToSave: {
         name: windowName,
-        id: windowTabs.windowId,
         tabs: windowTabs.tabs
     }});
+
+    console.log('save res: ', res);
+
+    if (res.status == 'failed') {
+        return alert(res.message);
+    }
+
+    if (!windowExists) {
+        addOptionToDropdown(getSavedWindowsDropdown(), windowName);
+    }
     
     savedWindows = await getSavedWindows();
     console.log('final saved windows: ', savedWindows);
@@ -108,8 +107,7 @@ async function removeWindow() {
     }
 }
 
-function addOptionToDropdown(windowName) {
-    let dropdown = getSavedWindowsDropdown();
+function addOptionToDropdown(dropdown, windowName) {
     let opt = document.createElement('option');
     opt.value = windowName;
     opt.id = 'dropdown-option-' + windowName;
@@ -123,7 +121,7 @@ async function loadDropdown() {
     console.log('saved windows on load: ' , savedWindows);
     if (savedWindows && savedWindows.length > 0) {
         for (let elem of savedWindows) {
-            addOptionToDropdown(elem.name);
+            addOptionToDropdown(getSavedWindowsDropdown(), elem.name);
         }
         showOpenWindowContainer();
     }
