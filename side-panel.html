@@ -2,6 +2,7 @@
 <html>
   <head>
     <title>Window Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
   </head>
   <body>
     <h1>Window Manager extension</h1>
@@ -11,20 +12,35 @@
 
       <div id="selected-window-name-placeholder"></div>
 
-      <input name="currentWindowName" type="text" id="currentWindowName"/>
+      <input style="width: auto;color: grey;border: 1px solid grey;border-radius: 0.75rem;" name="currentWindowName" type="text" id="currentWindowName"/>
 
-      <button id="save-button" type="button">Save</button>
+      <button id="save-button" class="btn btn-primary" type="button">Save</button>
     </div>
 
     <br>
 
     <div style="visibility: hidden;" id="open-window-container">
-      <select name="saved-windows" id="saved-windows-dropdown"></select>
-
-      <button id="open-selected-saved-window" type="button">Open</button>
-      <button id="remove-selected-saved-window" type="button">Remove</button>
+      <div id="dropdown" class="dropdown">
+        <button id="dropdown-button" class="btn btn-secondary btn-toggle dropdown-button">Saved Windows</button>
+        <div id="saved-windows-dropdown" class="dropdown-menu">
+        </div>
+      </div>
+      <button id="open-selected-saved-window" class="btn btn-secondary" type="button">Open</button>
+      <button id="remove-selected-saved-window" class="btn btn-danger" type="button">Remove</button>
     </div>
   </body>
   <script src="common.js"></script>
   <script src="side-panel.js"></script>
+  <style>
+    .dropdown {
+      display: inline-block;
+    }
+    .dropdown-menu {
+      display: none;
+    }
+
+    #remove-selected-saved-window {
+      background-color: lightcoral;
+    }
+  </style>
 </html>
