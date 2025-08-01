@@ -89,7 +89,7 @@ function getSavedWindowsDropdown() {
 }
 
 async function removeWindow() {
-    if (confirm(`Are you sure you want to remove saved window with name ${selectedWindowName}?`) == true) {
+    if (confirm(`Are you sure you want to remove saved window with name '${selectedWindowName}'?`) == true) {
         await chrome.runtime.sendMessage({windowNameToDelete: selectedWindowName});
         document.getElementById('dropdown-option-' + selectedWindowName).remove();
         selectedWindowName = null;

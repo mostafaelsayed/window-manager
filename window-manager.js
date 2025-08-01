@@ -33,7 +33,7 @@ async function handleWindowSavingRequest(windowToSave) {
     console.log('saved selected window!!');
     let savedWindows = await getSavedWindows();
     console.log('handleWindowSavingRequest savedWindows: ', savedWindows);
-    let window = await getCurrentWindow();
+    let window = windowToSave.current === false ? windowToSave : (await getCurrentWindow());
     const matchingIndex = getMatchingWindowsIndex(window, savedWindows);
     console.log('matching index: ', matchingIndex);
     if (matchingIndex !== -1) {
@@ -101,7 +101,6 @@ function findMatchingTabWindow(tabId, savedWindows) {
 async function windowFocusChangeListener() {
     const window = await getCurrentWindow();
     let savedWindows = await getSavedWindows();
-    // logSavedWindowsMetadata('windowFocusChangeListener', savedWindows);
     if (savedWindows.length == 0) {
         await removeFromStorage('selectedWindow');
         try {
@@ -134,7 +133,69 @@ async function windowFocusChangeListener() {
 }
 
 chrome.windows.onFocusChanged.addListener(windowFocusChangeListener);
+let previousSelected = undefined;
+let currentSelected = [];
 
-async function removeFromStorage(key) {
-    await chrome.storage.local.remove(key);
+async function tabHighlightedListener(info) {
+    console.log('info: ', info);
+    
+    try {
+        await chrome.contextMenus.remove(
+            'window-manager-save'
+        );
+    }
+    catch(e) {
+        console.warn('no id found');
+    }
+    await chrome.contextMenus.create(
+        {id: 'window-manager-save', title: 'Save Selected Tabs in New window', contexts: ['page']}
+    )
+    let selectedTabs = (await chrome.tabs.query({highlighted: true, currentWindow: true})).map((e) => {
+        console.log('the e: ', e);
+        return {
+            id: e.id,
+            url: e.pendingUrl || e.url
+        }});
+    if (!previousSelected) {
+        previousSelected = selectedTabs;
+        await persist({
+            selectedTabs: previousSelected
+        });
+    }
+    else {
+        console.log('previous: ', previousSelected);
+        console.log('current: ', currentSelected);
+        await persist({
+            selectedTabs: previousSelected
+        });
+        previousSelected = selectedTabs;
+    }
 }
+
+chrome.runtime.onConnect.addListener(function (port) {
+  if (port.name === 'mySidepanel') {
+    port.onDisconnect.addListener(async () => {
+    console.log('closeed');
+      await chrome.sidePanel.setOptions({
+            path: 'side-panel.html'
+        });
+    });
+  }
+});
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+    console.log('opening popup');
+    
+    try {
+        chrome.sidePanel.open({ windowId: tab.windowId });
+        await chrome.sidePanel.setOptions({
+            path: 'side-panel-selected-tabs.html'
+        });
+        await chrome.storage.local.set({selectedTabsSavingRequest: true});
+    }
+    catch(e) {
+        console.error('popup fail: ', e);
+    }
+});
+
+chrome.tabs.onHighlighted.addListener(tabHighlightedListener)

@@ -1,6 +1,5 @@
 async function getSavedWindows() {
     let savedWindows = await chrome.storage.local.get(['savedWindows']);
-    // console.log('savedWindows: ', JSON.stringify(savedWindows));
     if (savedWindows && savedWindows['savedWindows']) {
         return savedWindows['savedWindows'];
     }
@@ -45,6 +44,11 @@ function addToArrayIfNotExists(arr, elem) {
 
 async function persist(obj) {
     await chrome.storage.local.set(obj);
+}
+
+
+async function removeFromStorage(key) {
+    await chrome.storage.local.remove(key);
 }
 
 function tabsMatching(tabs1, tabs2) {
