@@ -102,7 +102,21 @@ async function removeWindow() {
 
 document.getElementById('refresh').addEventListener('click', () => {
     window.location.replace(window.location);
-})
+});
+
+document.getElementById('backup').addEventListener('click', async () => {
+    var element = document.createElement('a');
+    const savedWindows = await getSavedWindows();
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(savedWindows)));
+    element.setAttribute('download', 'window-manager-backup');
+
+    // element.style.display = 'none';
+    // document.body.appendChild(element);
+
+    element.click();
+
+    // document.body.removeChild(element);
+});
 
 function addOptionToCustomDropdown(dropdown, windowName) {
     let opt = document.createElement('li');
