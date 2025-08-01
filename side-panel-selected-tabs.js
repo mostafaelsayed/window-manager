@@ -32,4 +32,5 @@ document.getElementById('save-selected-tabs-button').addEventListener('click', a
     
     savedWindows = await getSavedWindows();
     console.log('final saved windows: ', savedWindows);
+    alert('Window Saved Successfully!');
 });
