@@ -149,6 +149,7 @@ async function tabHighlightedListener(info) {
     }
     await chrome.contextMenus.create(
         {id: 'window-manager-save', title: 'Save Selected Tabs in New window', contexts: ['page']}
+        , () => chrome.runtime.lastError
     )
     let selectedTabs = (await chrome.tabs.query({highlighted: true, currentWindow: true})).map((e) => {
         console.log('the e: ', e);
