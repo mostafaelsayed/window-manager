@@ -100,6 +100,10 @@ async function removeWindow() {
     }
 }
 
+document.getElementById('refresh').addEventListener('click', () => {
+    window.location.replace(window.location);
+})
+
 function addOptionToCustomDropdown(dropdown, windowName) {
     let opt = document.createElement('li');
     opt.addEventListener('click', dropdownSelected);
