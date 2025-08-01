@@ -1,5 +1,1 @@
-- fix overwwriting window name to already existing window name
-- current window name re-design
-- fix remove
-- find a way to know the state of windows after closing the browser
-- styling
+- add backup option
