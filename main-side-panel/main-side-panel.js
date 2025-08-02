@@ -1,5 +1,5 @@
 async function init() {
-    await loadNavTabs();
+    await loadNavTabs('main-side-panel');
     loadSavedWindowsDropdown();
     await updateSelectedWindowNamePlaceholder();
 }
