@@ -171,9 +171,9 @@ async function tabHighlightedListener(info) {
 }
 
 chrome.runtime.onConnect.addListener(function (port) {
-  if (port.name === 'save-selected-tabs-panel' || port.name == 'settings-panel') {
+  if (port.name === 'save-selected-tabs-panel') {
     port.onDisconnect.addListener(async () => {
-    console.log('closeed');
+    console.log('closed');
       await chrome.sidePanel.setOptions({
             path: 'side-panel.html'
         });

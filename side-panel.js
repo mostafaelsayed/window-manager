@@ -26,18 +26,18 @@ function hideOpenWindowContainer() {
     getOpenWindowContainer().style.visibility = 'hidden';
 }
 
-let getOpenWindowContainer = function() {
+let getOpenWindowContainer = function () {
     return document.getElementById("open-window-container");
 }
 
 async function getCurrentWindowTabs() {
     let window = await getCurrentWindow();
     console.log('the current window: ', window);
-    return {tabs: window.tabs.map(e => {return {url: e.url, id: e.id}})};
+    return { tabs: window.tabs.map(e => { return { url: e.url, id: e.id } }) };
 }
 
 async function openSavedWindow() {
-    await chrome.runtime.sendMessage({windowNameToOpen: selectedWindowName});
+    await chrome.runtime.sendMessage({ windowNameToOpen: selectedWindowName });
     // selectedWindowName = null;
 }
 
@@ -52,11 +52,13 @@ async function saveWindow() {
             return;
         }
     }
-    
-    let res = await chrome.runtime.sendMessage({ windowToSave: {
-        name: windowName,
-        tabs: windowTabs.tabs
-    }});
+
+    let res = await chrome.runtime.sendMessage({
+        windowToSave: {
+            name: windowName,
+            tabs: windowTabs.tabs
+        }
+    });
 
     console.log('save res: ', res);
 
@@ -67,7 +69,7 @@ async function saveWindow() {
     if (!windowExists) {
         addOptionToCustomDropdown(getSavedWindowsDropdown(), windowName);
     }
-    
+
     savedWindows = await getSavedWindows();
     console.log('final saved windows: ', savedWindows);
 
@@ -89,12 +91,36 @@ function getSavedWindowsDropdown() {
     return document.getElementById("saved-windows-dropdown");
 }
 
+
+
+loadNavTabsStylesHtml().then(html => {
+    let elem = document.createElement('style');
+    elem.innerHTML = html;
+    document.body.after(elem);
+
+    loadNavTabsMainHtml().then(html => {
+        document.getElementById('nav-tabs-container').innerHTML = html;
+        if (document.getElementById('settings-tab-link').classList.contains('active')) {
+            document.getElementById('settings-tab-link').classList.remove('active');
+            document.getElementById('settings-tab-link').removeAttribute('aria-current');
+            document.getElementById('main-tab-link').classList.add('active');
+            document.getElementById('main-tab-link').setAttribute('aria-current', 'page');
+        }
+
+        let elem = document.createElement('script');
+        elem.setAttribute('src', 'nav-tabs.js')
+        document.body.after(elem);
+
+
+    });
+});
+
 async function removeWindow() {
     if (!selectedWindowName || selectedWindowName.trim() == '') {
         return alert('Please select a Window first');
     }
     if (confirm(`Are you sure you want to remove saved window with name '${selectedWindowName}'?`) == true) {
-        await chrome.runtime.sendMessage({windowNameToDelete: selectedWindowName});
+        await chrome.runtime.sendMessage({ windowNameToDelete: selectedWindowName });
         document.getElementById('dropdown-option-' + selectedWindowName).remove();
         // selectedWindowName = null;
         let savedWindows = await getSavedWindows();
@@ -103,15 +129,6 @@ async function removeWindow() {
         }
     }
 }
-
-document.getElementById('refresh').addEventListener('click', refresh);
-
-document.getElementById('settings-tab-1').addEventListener('click', async () => {
-    await chrome.sidePanel.open({ windowId: (await getCurrentWindow()).id });
-    await chrome.sidePanel.setOptions({
-        path: 'settings.html'
-    });
-});
 
 function addOptionToCustomDropdown(dropdown, windowName) {
     let opt = document.createElement('li');
@@ -141,7 +158,7 @@ function dropdownSelected(e) {
 
 async function loadDropdown() {
     let savedWindows = await getSavedWindows();
-    console.log('saved windows on load: ' , savedWindows);
+    console.log('saved windows on load: ', savedWindows);
     if (savedWindows && savedWindows.length > 0) {
         for (let elem of savedWindows) {
             addOptionToCustomDropdown(getSavedWindowsDropdown(), elem.name);

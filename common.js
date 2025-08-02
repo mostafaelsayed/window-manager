@@ -6,12 +6,20 @@ async function getSavedWindows() {
     return [];
 }
 
-function refresh() {
-    window.location.replace(window.location);
+async function refresh() {
+    window.location.reload();
 }
 
 async function getCurrentWindow() {
     return await chrome.windows.get(chrome.windows.WINDOW_ID_CURRENT, { populate: true });
+}
+
+async function loadNavTabsStylesHtml() {
+    return (await fetch('nav-tabs-styles.html')).text();
+}
+
+async function loadNavTabsMainHtml() {
+    return (await fetch('nav-tabs.html')).text();
 }
 
 async function getCurrentSelectedWindow() {
