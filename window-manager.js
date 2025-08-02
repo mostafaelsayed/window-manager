@@ -95,41 +95,6 @@ function findMatchingTabWindow(tabId, savedWindows) {
     return -1;
 }
 
-async function windowFocusChangeListener() {
-    const window = await getCurrentWindow();
-    let savedWindows = await getSavedWindows();
-    if (savedWindows.length == 0) {
-        await removeFromStorage('selectedWindow');
-        try {
-            await chrome.runtime.sendMessage({refreshSelectedWindowName: true});
-        }
-        catch(e) {
-            console.warn('error sending: ', e.message);
-        }
-        return;
-    }
-    
-    const matchingIndex = getMatchingWindowsIndex(window, savedWindows);
-    
-    if (matchingIndex !== -1) {
-        let savedWindow = savedWindows[matchingIndex];
-        await persist({selectedWindow: {
-            name: savedWindow.name
-        }});
-        try {
-            await chrome.runtime.sendMessage({refreshSelectedWindowName: true});
-        }
-        catch(e) {
-            console.warn('error sending: ', e.message);
-        }
-    }
-    else {
-        await removeFromStorage('selectedWindow');
-        console.log('windowFocusChangeListener No saved window found');
-    }
-}
-
-chrome.windows.onFocusChanged.addListener(windowFocusChangeListener);
 let previousSelected = undefined;
 let currentSelected = [];
 
