@@ -1,27 +1,20 @@
-document.getElementById('refresh').addEventListener('click', refresh);
+getRefreshButton().addEventListener('click', refresh);
 
-document.getElementById('settings-tab').addEventListener('click', async () => {
+getSettingsTab().addEventListener('click', async () => {
     await chrome.sidePanel.open({ windowId: (await getCurrentWindow()).id });
-    await persist({
-        currentPannel: 'settings'
-    });
     await chrome.sidePanel.setOptions({
-        path: 'settings.html'
+        path: '/settings-panel/settings-panel.html'
     });
 });
 
-
-document.getElementById('main-tab').addEventListener('click', async () => {
+getMainTab().addEventListener('click', async () => {
     await chrome.sidePanel.open({ windowId: (await getCurrentWindow()).id });
-    await persist({
-        currentPannel: 'side-panel'
-    });
     await chrome.sidePanel.setOptions({
-        path: 'side-panel.html'
+        path: '/main-side-panel/main-side-panel.html'
     });
 });
 
-document.getElementById('backup').addEventListener('click', async () => {
+getBackupButton().addEventListener('click', async () => {
     var element = document.createElement('a');
     const savedWindows = await getSavedWindows();
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(savedWindows)));
@@ -29,7 +22,7 @@ document.getElementById('backup').addEventListener('click', async () => {
     element.click();
 });
 
-document.getElementById('import').addEventListener('change', async (e) => {
+getImportBackupInput().addEventListener('change', async (e) => {
     const file = e.target.files.item(0);
     if (!file) {
         return;

@@ -10,7 +10,6 @@ document.getElementById('save-selected-tabs-button').addEventListener('click', a
     let savedWindows = await getSavedWindows();
     console.log('window name to save: ', windowName);
     const windowTabs = await getSelectedTabs();
-    console.log('popup windowTabs: ', windowTabs);
     let windowExists = savedWindows.findIndex(e => e.name == windowName) !== -1;
     if (windowExists) {
         if (!confirm(`Window with name '${windowName}' already exists. Overwrite it?`)) {
@@ -30,7 +29,5 @@ document.getElementById('save-selected-tabs-button').addEventListener('click', a
         return alert(res.message);
     }
     
-    savedWindows = await getSavedWindows();
-    console.log('final saved windows: ', savedWindows);
     alert('Window Saved Successfully!');
 });

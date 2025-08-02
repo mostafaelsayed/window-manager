@@ -1,0 +1,29 @@
+#backup {
+    margin-top: 2.5%
+}
+
+#refresh:hover::after {
+    content: 'Refresh';
+}
+
+#backup:hover::after {
+    content: 'Take Backup';
+}
+
+#import-label:hover::after {
+    content: 'Import Backup';
+}
+
+#remove-selected-saved-window {
+    content: 'Remove Window';
+}
+
+.custom-tooltip:hover::after {
+    display: inline-block;
+    position: absolute;
+    margin-top: 4%;
+    border: 0.5px solid black;
+    border-radius: 0.5rem;
+    background: white;
+    padding: .25em;
+}

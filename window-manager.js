@@ -1,7 +1,5 @@
 importScripts('common.js');
 
-let openedWindowName = '';
-
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 
 function onMessageListener(request, sender, sendResponse) {
@@ -13,7 +11,6 @@ function onMessageListener(request, sender, sendResponse) {
 chrome.runtime.onMessage.addListener(onMessageListener);
 
 async function handleWindowOpenningRequest(windowNameToOpen) {
-    openedWindowName = windowNameToOpen;
     await chrome.windows.create({url: (await getSavedWindows()).find(e => e.name == windowNameToOpen).tabs.map(e => e.url)});
 }
 
@@ -173,9 +170,9 @@ async function tabHighlightedListener(info) {
 chrome.runtime.onConnect.addListener(function (port) {
   if (port.name === 'save-selected-tabs-panel') {
     port.onDisconnect.addListener(async () => {
-    console.log('closed');
+    console.log(`closed panel ${port.name}`);
       await chrome.sidePanel.setOptions({
-            path: 'side-panel.html'
+            path: 'main-side-panel/main-side-panel.html'
         });
     });
   }
@@ -185,7 +182,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     try {
         chrome.sidePanel.open({ windowId: tab.windowId });
         await chrome.sidePanel.setOptions({
-            path: 'side-panel-selected-tabs.html'
+            path: 'save-selected-tabs-panel/save-selected-tabs-panel.html'
         });
         await chrome.storage.local.set({selectedTabsSavingRequest: true});
     }

@@ -15,11 +15,54 @@ async function getCurrentWindow() {
 }
 
 async function loadNavTabsStylesHtml() {
-    return (await fetch('nav-tabs-styles.html')).text();
+    return (await fetch('/nav-tabs/nav-tabs-styles.css')).text();
 }
 
 async function loadNavTabsMainHtml() {
-    return (await fetch('nav-tabs.html')).text();
+    return (await fetch('/nav-tabs/nav-tabs.html')).text();
+}
+
+async function getCurrentWindowTabs() {
+    let window = await getCurrentWindow();
+    console.log('the current window: ', window);
+    return { tabs: window.tabs.map(e => { return { url: e.url, id: e.id } }) };
+}
+
+async function loadNavTabs() {
+    loadNavTabsStylesHtml().then(html => {
+        let elem = document.createElement('style');
+        elem.innerHTML = html;
+        document.body.after(elem);
+
+        loadNavTabsMainHtml().then(html => {
+            document.getElementById('nav-tabs-container').innerHTML = html;
+            let settingsTabLink = document.getElementById('settings-tab-link');
+            let mainTabLink = document.getElementById('main-tab-link');
+
+            if (settingsTabLink.classList.contains('active')) {
+                settingsTabLink.classList.remove('active');
+                settingsTabLink.removeAttribute('aria-current');
+                mainTabLink.classList.add('active');
+                mainTabLink.setAttribute('aria-current', 'page');
+            }
+            else if (mainTabLink.classList.contains('active')) {
+                mainTabLink.classList.remove('active');
+                mainTabLink.removeAttribute('aria-current');
+                settingsTabLink.classList.add('active');
+                settingsTabLink.setAttribute('aria-current', 'page');
+            }
+
+            let elem = document.createElement('script');
+            elem.setAttribute('src', '/nav-tabs/nav-tabs-elements.js');
+            let elem2 = document.createElement('script');
+            elem2.setAttribute('src', '/nav-tabs/nav-tabs.js');
+            document.body.after(elem);
+            elem.onload = function() {
+                document.body.after(elem2);
+            }
+                     
+        });
+    });
 }
 
 async function getCurrentSelectedWindow() {

@@ -10,7 +10,7 @@
     "manifest_version": 3,
     "version": "1.0",
     "side_panel": {
-        "default_path": "side-panel.html"
+        "default_path": "main-side-panel/main-side-panel.html"
     },
     "action": {
         "default_title": "Click to open panel"
