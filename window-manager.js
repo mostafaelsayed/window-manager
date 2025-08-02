@@ -152,7 +152,6 @@ async function tabHighlightedListener(info) {
         , () => chrome.runtime.lastError
     )
     let selectedTabs = (await chrome.tabs.query({highlighted: true, currentWindow: true})).map((e) => {
-        console.log('the e: ', e);
         return {
             id: e.id,
             url: e.pendingUrl || e.url
@@ -164,8 +163,6 @@ async function tabHighlightedListener(info) {
         });
     }
     else {
-        console.log('previous: ', previousSelected);
-        console.log('current: ', currentSelected);
         await persist({
             selectedTabs: previousSelected
         });
@@ -174,7 +171,7 @@ async function tabHighlightedListener(info) {
 }
 
 chrome.runtime.onConnect.addListener(function (port) {
-  if (port.name === 'mySidepanel') {
+  if (port.name === 'save-selected-tabs-panel' || port.name == 'settings-panel') {
     port.onDisconnect.addListener(async () => {
     console.log('closeed');
       await chrome.sidePanel.setOptions({
@@ -184,9 +181,7 @@ chrome.runtime.onConnect.addListener(function (port) {
   }
 });
 
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-    console.log('opening popup');
-    
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {    
     try {
         chrome.sidePanel.open({ windowId: tab.windowId });
         await chrome.sidePanel.setOptions({
@@ -195,7 +190,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         await chrome.storage.local.set({selectedTabsSavingRequest: true});
     }
     catch(e) {
-        console.error('popup fail: ', e);
+        console.error('side-panel-selected-tabs opening fail: ', e);
     }
 });
 

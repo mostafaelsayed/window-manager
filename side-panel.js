@@ -38,7 +38,7 @@ async function getCurrentWindowTabs() {
 
 async function openSavedWindow() {
     await chrome.runtime.sendMessage({windowNameToOpen: selectedWindowName});
-    selectedWindowName = null;
+    // selectedWindowName = null;
 }
 
 async function saveWindow() {
@@ -90,10 +90,13 @@ function getSavedWindowsDropdown() {
 }
 
 async function removeWindow() {
+    if (!selectedWindowName || selectedWindowName.trim() == '') {
+        return alert('Please select a Window first');
+    }
     if (confirm(`Are you sure you want to remove saved window with name '${selectedWindowName}'?`) == true) {
         await chrome.runtime.sendMessage({windowNameToDelete: selectedWindowName});
         document.getElementById('dropdown-option-' + selectedWindowName).remove();
-        selectedWindowName = null;
+        // selectedWindowName = null;
         let savedWindows = await getSavedWindows();
         if (savedWindows.length == 0) {
             hideOpenWindowContainer();
@@ -101,43 +104,13 @@ async function removeWindow() {
     }
 }
 
-function refresh() {
-    window.location.replace(window.location);
-}
-
 document.getElementById('refresh').addEventListener('click', refresh);
 
-document.getElementById('backup').addEventListener('click', async () => {
-    var element = document.createElement('a');
-    const savedWindows = await getSavedWindows();
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(savedWindows)));
-    element.setAttribute('download', 'window-manager-backup');
-    element.click();
-});
-
-let importedBackup = undefined;
-
-document.getElementById('import').addEventListener('change', async (e) => {
-    const file = e.target.files.item(0);
-    if (!file) {
-        return;
-    }
-    const text = await file.text();
-    importedBackup = JSON.parse(text);
-    document.getElementById('import-button').style.display = 'inline-block';
-});
-
-document.getElementById('import-button').addEventListener('click', async () => {
-    if (!confirm('Are you sure you want to import this backup?')) {
-        return;
-    }
-    await persist({
-        savedWindows: importedBackup
+document.getElementById('settings-tab-1').addEventListener('click', async () => {
+    await chrome.sidePanel.open({ windowId: (await getCurrentWindow()).id });
+    await chrome.sidePanel.setOptions({
+        path: 'settings.html'
     });
-    importedBackup = undefined;
-    document.getElementById('import-button').style.display = 'none';
-    alert('Saved Windows Imported Successfully!');
-    refresh();
 });
 
 function addOptionToCustomDropdown(dropdown, windowName) {

@@ -2,7 +2,7 @@ async function getSelectedTabs() {
     return (await chrome.storage.local.get('selectedTabs'))['selectedTabs'];
 }
 
-chrome.runtime.connect({ name: 'mySidepanel' });
+chrome.runtime.connect({ name: 'save-selected-tabs-panel' });
 
 document.getElementById('save-selected-tabs-button').addEventListener('click', async (e) => {
     const windowName = document.getElementById('selectedTabsWindowName').value;

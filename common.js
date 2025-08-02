@@ -6,6 +6,10 @@ async function getSavedWindows() {
     return [];
 }
 
+function refresh() {
+    window.location.replace(window.location);
+}
+
 async function getCurrentWindow() {
     return await chrome.windows.get(chrome.windows.WINDOW_ID_CURRENT, { populate: true });
 }
