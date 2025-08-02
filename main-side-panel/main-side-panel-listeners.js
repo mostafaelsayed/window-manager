@@ -5,6 +5,12 @@ let openSavedWindowButton = getOpenSelectedSavedWindow();
 let removeButton = getRemoveSavedWindowButton();
 let savedWindowsDropdownButton = getSavedWindowsDropdownButton();
 
+chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+    if (request.refreshSelectedWindowName) {
+        await updateSelectedWindowNamePlaceholder();
+    }
+});
+
 async function saveWindowListener() {
     const windowName = getCurrentWindowNameToSaveInput().value;
     let savedWindows = await getSavedWindows();
@@ -60,6 +66,7 @@ async function removeWindowListener() {
             hideSavedWindowsContainer();
         }
         alert(`Window '${selectedWindowName}' removed successfully!`);
+        refresh();
     }
 }
 

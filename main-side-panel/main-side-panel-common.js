@@ -13,3 +13,10 @@ function addOptionToCustomDropdown(dropdown, windowName) {
     opt.style.cursor = 'pointer';
     dropdown.appendChild(opt);
 }
+
+async function updateSelectedWindowNamePlaceholder() {
+    const currentSelectedWindow = await getCurrentSelectedWindow();
+    if (currentSelectedWindow && currentSelectedWindow.name) {
+        getSelectedWindowNamePlaceholder().innerText = "You are now in the window named '" + currentSelectedWindow.name + "'";
+    }
+}

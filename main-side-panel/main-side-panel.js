@@ -1,7 +1,28 @@
 async function init() {
     await loadNavTabs('main-side-panel');
     loadSavedWindowsDropdown();
+    await checkCurrentWindowName();
     await updateSelectedWindowNamePlaceholder();
+}
+
+async function checkCurrentWindowName() {
+    const window = await getCurrentWindow();
+    let savedWindows = await getSavedWindows();
+    if (savedWindows.length == 0) {
+        await removeFromStorage('selectedWindow');
+    }
+    
+    const matchingIndex = getMatchingWindowsIndex(window, savedWindows);
+    
+    if (matchingIndex !== -1) {
+        let savedWindow = savedWindows[matchingIndex];
+        await persist({selectedWindow: {
+            name: savedWindow.name
+        }});
+    }
+    else {
+        await removeFromStorage('selectedWindow');
+    }
 }
 
 function showSavedWindowsContainer() {
@@ -10,13 +31,6 @@ function showSavedWindowsContainer() {
 
 function hideSavedWindowsContainer() {
     getSavedWindowsContainer().style.visibility = 'hidden';
-}
-
-async function updateSelectedWindowNamePlaceholder() {
-    const currentSelectedWindow = await getCurrentSelectedWindow();
-    if (currentSelectedWindow && currentSelectedWindow.name) {
-        getSelectedWindowNamePlaceholder().innerText = "You are now in the window named '" + currentSelectedWindow.name + "'";
-    }
 }
 
 async function loadSavedWindowsDropdown() {
