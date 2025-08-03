@@ -1,0 +1,2 @@
+- back button in save-selected-tabs-panel
+- option to add selected tabs to already existing window

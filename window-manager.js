@@ -98,6 +98,20 @@ function findMatchingTabWindow(tabId, savedWindows) {
 let previousSelected = undefined;
 let currentSelected = [];
 
+async function createAddSelectedTabToSavedWindowContextMenuItem() {
+    await chrome.contextMenus.create(
+        {id: 'add-selected-tab-to-window', title: 'Add Selected Tabs to a window', contexts: ['page']}
+        , () => chrome.runtime.lastError
+    )
+    let savedWindows = await getSavedWindows();
+    for (let window of savedWindows) {
+        await chrome.contextMenus.create(
+            {id: 'add-selected-tab-to-window-' + window.name, parentId: 'add-selected-tab-to-window', title: window.name, contexts: ['page']}
+            , () => chrome.runtime.lastError
+        )
+    }
+}
+
 async function tabHighlightedListener(info) {
     console.log('info: ', info);
     
@@ -109,10 +123,19 @@ async function tabHighlightedListener(info) {
     catch(e) {
         console.warn('no id found');
     }
+    try {
+        await chrome.contextMenus.remove(
+            'add-selected-tab-to-window'
+        );
+    }
+    catch(e) {
+        console.warn('no id found');
+    }
     await chrome.contextMenus.create(
         {id: 'window-manager-save', title: 'Save Selected Tabs in New window', contexts: ['page']}
         , () => chrome.runtime.lastError
-    )
+    );
+    await createAddSelectedTabToSavedWindowContextMenuItem();
     let selectedTabs = (await chrome.tabs.query({highlighted: true, currentWindow: true})).map((e) => {
         return {
             id: e.id,
@@ -145,11 +168,24 @@ chrome.runtime.onConnect.addListener(function (port) {
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {    
     try {
-        chrome.sidePanel.open({ windowId: tab.windowId });
-        await chrome.sidePanel.setOptions({
-            path: 'save-selected-tabs-panel/save-selected-tabs-panel.html'
-        });
-        await chrome.storage.local.set({selectedTabsSavingRequest: true});
+        if (info.menuItemId == 'window-manager-save') {
+            chrome.sidePanel.open({ windowId: tab.windowId });
+            await chrome.sidePanel.setOptions({
+                path: 'save-selected-tabs-panel/save-selected-tabs-panel.html'
+            });
+        }
+        else if (info.menuItemId.startsWith('add-selected-tab-to-window-')) {
+            let savedWindows = await getSavedWindows();
+            let savedWindowIndex = savedWindows.findIndex(e => {
+                return e.name == info.menuItemId.substring('add-selected-tab-to-window-'.length)
+            });
+            let savedWindow = savedWindows[savedWindowIndex];
+            savedWindow.tabs.push(...previousSelected);
+            savedWindows[savedWindowIndex] = savedWindow;
+            await persist({
+                savedWindows
+            });
+        }
     }
     catch(e) {
         console.error('side-panel-selected-tabs opening fail: ', e);

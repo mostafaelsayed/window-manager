@@ -4,7 +4,7 @@ async function getSelectedTabs() {
 
 chrome.runtime.connect({ name: 'save-selected-tabs-panel' });
 
-document.getElementById('save-selected-tabs-button').addEventListener('click', async (e) => {
+document.getElementById('save-selected-tabs-button').addEventListener('click', async () => {
     const windowName = document.getElementById('selectedTabsWindowName').value;
 
     let savedWindows = await getSavedWindows();
