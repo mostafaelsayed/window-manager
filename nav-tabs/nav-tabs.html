@@ -6,13 +6,15 @@
         <a id="settings-tab-link" class="nav-link" href="#">Settings</a>
     </li>
     &nbsp;&nbsp;
-    <div class="custom-tooltip" style="cursor: pointer;margin-top: 2.5%;display: inline-block;" id="refresh"><i
-            class="fa-solid fa-arrow-rotate-right"></i></div>
+    <div class="settings-icon custom-tooltip" id="refresh"><i
+            class="fa-solid fa-arrow-rotate-right"></i><div class="tooltip-container">Refresh</div></div>
     &nbsp;&nbsp;
-    <div class="custom-tooltip" id="backup" style="cursor: pointer;margin-top: 2.5%;display: inline-block"><i
-            class="fa-solid fa-floppy-disk fa-xl"></i></div>
+    <div class="settings-icon custom-tooltip" id="backup"><i
+            class="fa-solid fa-floppy-disk fa-xl"></i><div class="tooltip-container">Take Backup</div></div>
     &nbsp;&nbsp;
-    <label class="custom-tooltip" id="import-label" style="cursor: pointer;margin-top: 2.5%" for="import"><i
-            class="fa-solid fa-upload fa-xl"></i></label>
-    <input type="file" id="import" class="form-control" style="display: none;" />
+    <div class="settings-icon">
+        <label class="custom-tooltip" style="cursor: pointer;" id="import-label" for="import"><i
+                class="fa-solid fa-upload fa-xl"></i><div class="tooltip-container">Import Backup</div></label>
+        <input type="file" id="import" class="form-control" style="display: none;" />
+    </div>
 </ul>

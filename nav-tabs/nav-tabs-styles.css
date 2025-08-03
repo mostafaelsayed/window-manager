@@ -1,29 +1,26 @@
-#backup {
-    margin-top: 2.5%
+.custom-tooltip {
+    position: relative;
 }
 
-#refresh:hover::after {
-    content: 'Refresh';
-}
-
-#backup:hover::after {
-    content: 'Take Backup';
-}
-
-#import-label:hover::after {
-    content: 'Import Backup';
-}
-
-#remove-selected-saved-window {
-    content: 'Remove Window';
-}
-
-.custom-tooltip:hover::after {
-    display: inline-block;
+.tooltip-container {
+    visibility: hidden;
+    z-index: 1;
+    color: white;
     position: absolute;
-    margin-top: 4%;
-    border: 0.5px solid black;
-    border-radius: 0.5rem;
-    background: white;
-    padding: .25em;
+    margin-top: 2px;
+    margin-left: 5px;
+    padding: 5px;
+    border-radius: 0.5em;
+}
+
+.custom-tooltip:hover > .tooltip-container {
+    visibility: visible;
+    background-color: black
+}
+
+.settings-icon {
+    cursor: pointer;
+    -ms-transform: translateY(25%);
+    transform: translateY(25%);
+    display: inline-block;
 }
