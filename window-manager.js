@@ -179,8 +179,9 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
             let savedWindowIndex = savedWindows.findIndex(e => {
                 return e.name == info.menuItemId.substring('add-selected-tab-to-window-'.length)
             });
+            let previouslySelectedTabs = (await chrome.storage.local.get('selectedTabs'))['selectedTabs'];
             let savedWindow = savedWindows[savedWindowIndex];
-            savedWindow.tabs.push(...previousSelected);
+            savedWindow.tabs.push(...previouslySelectedTabs);
             savedWindows[savedWindowIndex] = savedWindow;
             await persist({
                 savedWindows
