@@ -13,7 +13,8 @@
         "default_path": "main-side-panel/main-side-panel.html"
     },
     "action": {
-        "default_title": "Click to open panel"
+        "default_title": "Click to open panel",
+        "default_popup": "popup/popup.html"
     },
     "background": {
         "service_worker": "window-manager.js"

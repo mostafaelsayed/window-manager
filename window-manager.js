@@ -170,9 +170,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     try {
         if (info.menuItemId == 'window-manager-save') {
             chrome.sidePanel.open({ windowId: tab.windowId });
-            await chrome.sidePanel.setOptions({
-                path: 'save-selected-tabs-panel/save-selected-tabs-panel.html'
-            });
+            await chrome.action.openPopup({});
         }
         else if (info.menuItemId.startsWith('add-selected-tab-to-window-')) {
             let savedWindows = await getSavedWindows();
