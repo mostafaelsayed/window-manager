@@ -1,4 +1,5 @@
 async function init() {
+    document.body.onload = await onloadListener;
     await loadNavTabs('main-side-panel');
     loadSavedWindowsDropdown();
     await checkCurrentWindowName();

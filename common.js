@@ -111,6 +111,32 @@ async function persist(obj) {
     await chrome.storage.local.set(obj);
 }
 
+async function checkDarkModeState(panelName) {
+    const darkMode = (await chrome.storage.local.get('darkMode'))['darkMode'];
+    console.log('darks: ', darkMode);
+    if (darkMode === true) {
+        document.body.style.backgroundColor = 'black';
+        document.body.style.color = 'white';
+        if (panelName == 'settings-panel') {
+            document.getElementById('dark-mode-text').innerText = 'Light Mode';
+            document.getElementById('dark-mode-icon').classList.remove('fa-moon');
+            document.getElementById('dark-mode-icon').classList.add('fa-sun');
+            document.getElementById('dark-mode-icon').classList.remove('fa-solid');
+            document.getElementById('dark-mode-icon').classList.add('fa-regular');
+        }
+    }
+    else {
+        document.body.style.backgroundColor = 'white';
+        document.body.style.color = 'black';
+        if (panelName == 'settings-panel') {
+            document.getElementById('dark-mode-text').innerText = 'Dark Mode';
+            document.getElementById('dark-mode-icon').classList.remove('fa-sun');
+            document.getElementById('dark-mode-icon').classList.add('fa-moon');
+            document.getElementById('dark-mode-icon').classList.remove('fa-regular');
+            document.getElementById('dark-mode-icon').classList.add('fa-solid');
+        }
+    }
+}
 
 async function removeFromStorage(key) {
     await chrome.storage.local.remove(key);

@@ -85,6 +85,11 @@ async function savedWindowsDropdownButtonListener() {
     }
 }
 
+async function onloadListener() {
+    console.log('loaded');
+    await checkDarkModeState('main-side-panel');
+}
+
 saveButton.addEventListener('click', saveWindowListener);
 openSavedWindowButton.addEventListener('click', openSavedWindowListener);
 removeButton.addEventListener('click', removeWindowListener);
