@@ -11,7 +11,7 @@ function onMessageListener(request, sender, sendResponse) {
 chrome.runtime.onMessage.addListener(onMessageListener);
 
 async function handleWindowOpenningRequest(windowNameToOpen) {
-    await chrome.windows.create({url: (await getSavedWindows()).find(e => e.name == windowNameToOpen).tabs.map(e => e.url)});
+    await chrome.windows.create({url: (await getSavedWindows()).find(e => e.name == windowNameToOpen).tabs.map(e => e.url), state: 'maximized'});
 }
 
 async function logSavedWindowsMetadata(functionName, savedWindows) {

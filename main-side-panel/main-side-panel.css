@@ -26,3 +26,7 @@ body {
     visibility: visible;
     background-color: black
 }
+
+#current-window-main-info {
+    margin-top: 3%;
+}

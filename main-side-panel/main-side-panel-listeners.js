@@ -75,13 +75,13 @@ async function savedWindowsDropdownButtonListener() {
     let display = dropdown.style.display;
     dropdown.style.display = (display == 'block' ? 'none' : 'block');
     let dropdownCaret = getSavedWindowsDropdownCaret();
-    if (dropdownCaret.classList.contains('fa-caret-down')) {
+    if (dropdownCaret?.classList?.contains('fa-caret-down')) {
         dropdownCaret.classList.remove('fa-caret-down');
         dropdownCaret.classList.add('fa-caret-up');
     }
     else {
-        dropdownCaret.classList.remove('fa-caret-up');
-        dropdownCaret.classList.add('fa-caret-down');
+        dropdownCaret?.classList?.remove('fa-caret-up');
+        dropdownCaret?.classList?.add('fa-caret-down');
     }
 }
 
