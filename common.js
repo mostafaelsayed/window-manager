@@ -32,7 +32,7 @@ function getMainTabLink() {
 async function getCurrentWindowTabs() {
     let window = await getCurrentWindow();
     console.log('the current window: ', window);
-    return { tabs: window.tabs.map(e => { return { url: e.url, id: e.id } }) };
+    return window.tabs.map(e => { return { url: e.url, id: e.id } });
 }
 
 function toggleActiveTab(panelName) {

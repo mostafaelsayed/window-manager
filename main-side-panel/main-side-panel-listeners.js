@@ -4,6 +4,7 @@ let saveButton = getSaveButton();
 let openSavedWindowButton = getOpenSelectedSavedWindow();
 let removeButton = getRemoveSavedWindowButton();
 let savedWindowsDropdownButton = getSavedWindowsDropdownButton();
+let overwriteWithCurrentWindowButton = getOverwriteWithCurrentWindowButton();
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     if (request.refreshSelectedWindowName) {
@@ -26,7 +27,7 @@ async function saveWindowListener() {
     let res = await chrome.runtime.sendMessage({
         windowToSave: {
             name: windowName,
-            tabs: windowTabs.tabs
+            tabs: windowTabs
         }
     });
 
@@ -85,6 +86,31 @@ async function savedWindowsDropdownButtonListener() {
     }
 }
 
+async function overwriteWithCurrentWindowListener() {
+    if (!selectedWindowName || selectedWindowName.trim() == '') {
+        return alert('Please select a Window first');
+    }
+    if (!confirm('Are you sure you want to overwrite selected window with the current tabs?')) {
+        return;
+    }
+    let currentTabs = await getCurrentWindowTabs();
+    let savedWindows = await getSavedWindows();
+    let savedWindowIndex = savedWindows.findIndex(e => {
+        return e.name == selectedWindowName;
+    });
+    let savedWindow = savedWindows[savedWindowIndex];
+    savedWindow.tabs = currentTabs;
+    savedWindows[savedWindowIndex] = savedWindow;
+    await persist({
+        savedWindows
+    });
+    await persist({selectedWindow: {
+        name: selectedWindowName
+    }});
+    alert(`Window ${selectedWindowName} saved successfully!`);
+    await updateSelectedWindowNamePlaceholder();
+}
+
 async function onloadListener() {
     console.log('loaded');
     await checkDarkModeState('main-side-panel');
@@ -94,3 +120,4 @@ saveButton.addEventListener('click', saveWindowListener);
 openSavedWindowButton.addEventListener('click', openSavedWindowListener);
 removeButton.addEventListener('click', removeWindowListener);
 savedWindowsDropdownButton.addEventListener('click', savedWindowsDropdownButtonListener);
+overwriteWithCurrentWindowButton.addEventListener('click', overwriteWithCurrentWindowListener)

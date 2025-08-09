@@ -33,3 +33,7 @@ function getOpenSelectedSavedWindow() {
 function getSavedWindowsDropdownCaret() {
     return document.getElementById('dropdown-caret');
 }
+
+function getOverwriteWithCurrentWindowButton() {
+    return document.getElementById('overwrite-with-current-window');
+}
