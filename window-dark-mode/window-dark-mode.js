@@ -3,7 +3,7 @@ chrome.runtime.onMessage.addListener(
         console.log(sender.tab ?
             "from a content script:" + sender.tab.url :
             "from the extension");
-        if (request.data === "enable-dark-mode-for-this-tab") {
+        if (request.data === "enable-dark-mode-for-this-site" || request.data == 'enable-dark-mode-for-the-current-site-domain') {
             setDarkMode();
             sendResponse({ 'done': true });
         }
@@ -15,7 +15,7 @@ async function get(key) {
     if (obj && obj[key]) {
         return obj[key];
     }
-    return [];
+    return null;
 }
 
 async function init() {
@@ -24,38 +24,36 @@ async function init() {
     if (tabsGlobalSettings && tabsGlobalSettings[url] && tabsGlobalSettings[url].darkMode === true ) {
         setDarkMode();
     }
-}
-
-function setDarkMode() {
-    document.body.style.backgroundColor = '#1a1a1aff';
-    document.body.style.color = 'white';
-    for (let elem of document.body.getElementsByTagName('*')) {
-        elem.style.backgroundColor = '#1a1a1aff';
-        elem.style.color = 'white';
-    }
-    for (let elem of document.body.getElementsByTagName('pre')) {
-        elem.style.backgroundColor = 'grey';
-        for (let elem1 of elem.getElementsByTagName('span')) {
-            elem1.style.backgroundColor = 'grey';
-        }
-    }
-    for (let elem of document.body.getElementsByTagName('code')) {
-        elem.style.backgroundColor = 'grey';
-        for (let elem1 of elem.getElementsByTagName('span')) {
-            elem1.style.backgroundColor = 'grey';
-        }
-    }
-
-    for (let elem of document.body.getElementsByTagName('a')) {
-        const elemBackgroundColor = window.getComputedStyle(elem).getPropertyValue('background-color');
-        console.log('elemBackgroundColor: ', elemBackgroundColor);
-        if (elemBackgroundColor == 'rgb(26, 26, 26)' || elemBackgroundColor == '#1a1a1aff') {
-            elem.style.color = '#0067cd';
-            for (let elem1 of elem.getElementsByTagName('*')) {
-                elem1.style.color = '#0067cd';
+    else {
+        const domainGlobalSettings = await get('domainGlobalSettings');
+        const url = window.location.href;
+        if (domainGlobalSettings) {
+            for (let key in domainGlobalSettings) {
+                if (url.startsWith(key)) {
+                    setDarkMode();
+                }
             }
         }
     }
+}
+
+const config = {
+  childList: true,
+  subtree: true
+};
+const observer = new MutationObserver((mutationsList) => {
+  mutationsList.forEach((mutation) => {
+    console.log('Content has changed:');
+        setTimeout(() => {
+            init();
+        }, 2000);
+  });
+});
+
+observer.observe(document, config);
+
+function setDarkMode() {
+    document.body.classList.add('window-manager-dark-mode');
 }
 
 init();

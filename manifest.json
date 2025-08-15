@@ -22,6 +22,7 @@
     "content_scripts": [
         {
             "matches": ["<all_urls>"],
+            "css": ["window-dark-mode/window-dark-mode.css"],
             "js": ["window-dark-mode/window-dark-mode.js"]
         }
     ]

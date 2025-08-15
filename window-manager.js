@@ -12,7 +12,11 @@ chrome.runtime.onMessage.addListener(onMessageListener);
 
 (async() => {
     await chrome.contextMenus.create(
-        {id: 'Enable Dark Mode for this tab', title: 'Enable Dark Mode for this tab', contexts: ['page']}
+        {id: 'Enable Dark Mode for this site', title: 'Enable Dark Mode for this site', contexts: ['page']}
+        , () => chrome.runtime.lastError
+    );
+    await chrome.contextMenus.create(
+        {id: 'Enable Dark Mode for the current site domain', title: 'Enable Dark Mode for the current site domain', contexts: ['page']}
         , () => chrome.runtime.lastError
     )
 })();
@@ -192,10 +196,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
                 savedWindows
             });
         }
-        else if (info.menuItemId == 'Enable Dark Mode for this tab') {
+        else if (info.menuItemId == 'Enable Dark Mode for this site') {
             (async () => {
                 const [tab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
-                await chrome.tabs.sendMessage(tab.id, {data: "enable-dark-mode-for-this-tab"});
+                await chrome.tabs.sendMessage(tab.id, {data: "enable-dark-mode-for-this-site"});
                 let tabsGlobalSettings = await get('tabsGlobalSettings');
                 if (!tabsGlobalSettings) {
                     tabsGlobalSettings = {};
@@ -206,6 +210,25 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
                 
                 await persist({
                     tabsGlobalSettings
+                });
+            })();
+        }
+        else if (info.menuItemId == 'Enable Dark Mode for the current site domain') {
+            (async () => {
+                const [tab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
+                await chrome.tabs.sendMessage(tab.id, {data: "enable-dark-mode-for-the-current-site-domain"});
+                let domainGlobalSettings = await get('domainGlobalSettings');
+                if (!domainGlobalSettings) {
+                    domainGlobalSettings = {};
+                }
+                let hostname = new URL(tab.url).hostname;
+                let hostNameWithProtocol = tab.url.substring(0, tab.url.indexOf(':')) + '://' + hostname;
+                domainGlobalSettings[hostNameWithProtocol] = {
+                    darkMode: true
+                };
+                
+                await persist({
+                    domainGlobalSettings
                 });
             })();
         }
