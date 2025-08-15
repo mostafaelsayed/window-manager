@@ -10,6 +10,13 @@ function onMessageListener(request, sender, sendResponse) {
 
 chrome.runtime.onMessage.addListener(onMessageListener);
 
+(async() => {
+    await chrome.contextMenus.create(
+        {id: 'Enable Dark Mode for this tab', title: 'Enable Dark Mode for this tab', contexts: ['page']}
+        , () => chrome.runtime.lastError
+    )
+})();
+
 async function handleWindowOpenningRequest(windowNameToOpen) {
     await chrome.windows.create({url: (await getSavedWindows()).find(e => e.name == windowNameToOpen).tabs.map(e => e.url), state: 'maximized'});
 }
@@ -184,6 +191,12 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
             await persist({
                 savedWindows
             });
+        }
+        else if (info.menuItemId == 'Enable Dark Mode for this tab') {
+            (async () => {
+                const [tab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
+                await chrome.tabs.sendMessage(tab.id, {data: "enable-dark-mode-for-this-tab"});
+            })();
         }
     }
     catch(e) {
