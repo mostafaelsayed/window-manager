@@ -196,6 +196,17 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
             (async () => {
                 const [tab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
                 await chrome.tabs.sendMessage(tab.id, {data: "enable-dark-mode-for-this-tab"});
+                let tabsGlobalSettings = await get('tabsGlobalSettings');
+                if (!tabsGlobalSettings) {
+                    tabsGlobalSettings = {};
+                }
+                tabsGlobalSettings[tab.url] = {
+                    darkMode: true
+                };
+                
+                await persist({
+                    tabsGlobalSettings
+                });
             })();
         }
     }

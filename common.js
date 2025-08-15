@@ -6,6 +6,14 @@ async function getSavedWindows() {
     return [];
 }
 
+async function get(key) {
+    let obj = await chrome.storage.local.get([key]);
+    if (obj && obj[key]) {
+        return obj[key];
+    }
+    return null;
+}
+
 async function refresh() {
     window.location.reload();
 }
