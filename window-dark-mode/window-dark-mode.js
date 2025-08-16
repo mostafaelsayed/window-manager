@@ -7,6 +7,14 @@ chrome.runtime.onMessage.addListener(
             enableDarkMode();
             sendResponse({ 'done': true });
         }
+        else if (request.data === "disable-dark-mode-for-this-site" || request.data == 'disable-dark-mode-for-the-current-site-domain') {
+            disableDarkMode();
+            sendResponse({ 'done': true });
+        }
+        else if (request.data === 'check-dark-mode-state') {
+            init();
+            sendResponse({'done': true});
+        }
     }
 );
 
@@ -23,17 +31,21 @@ async function init() {
         const tabsGlobalSettings = await get('tabsGlobalSettings');
         const url = window.location.href;
         if (tabsGlobalSettings && tabsGlobalSettings[url] && tabsGlobalSettings[url].darkMode === true ) {
-            enableDarkMode();
+            return enableDarkMode();
         }
         else {
             const domainGlobalSettings = await get('domainGlobalSettings');
             const url = window.location.href;
             if (domainGlobalSettings) {
                 for (let key in domainGlobalSettings) {
-                    if (url.startsWith(key)) {
-                        enableDarkMode();
+                    if (url.startsWith(key) && domainGlobalSettings[key].darkMode === true) {
+                        return enableDarkMode();
                     }
                 }
+                return disableDarkMode();
+            }
+            else {
+                return disableDarkMode();
             }
         }
     }

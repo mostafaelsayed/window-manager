@@ -10,16 +10,75 @@ function onMessageListener(request, sender, sendResponse) {
 
 chrome.runtime.onMessage.addListener(onMessageListener);
 
-(async() => {
+initContextMenu();
+
+async function initContextMenu() {
+    await chrome.contextMenus.remove(
+        'add-selected-tab-to-window', () => chrome.runtime.lastError
+    );
+    await chrome.contextMenus.remove(
+        'window-manager-save', () => chrome.runtime.lastError
+    );
+    let tabsGlobalSettings = (await get('tabsGlobalSettings')) || {};
+    let domainGlobalSettings = (await get('domainGlobalSettings')) || {};
+    const [tab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
+    const hostNameWithProtocol = getHostNameWithProtocolFromCurrentUrl(tab);
+    console.log('tabsGlobalSettings: ', tabsGlobalSettings);
+    console.log('the tab url: ', tab.url);
+    if (!tabsGlobalSettings[tab.url] && !domainGlobalSettings[hostNameWithProtocol]) {
+        await chrome.contextMenus.remove('Disable Dark Mode for this site', () => chrome.runtime.lastError);
+        await chrome.contextMenus.remove('Disable Dark Mode for the current site domain', () => chrome.runtime.lastError);
+        await chrome.contextMenus.create(
+            {id: 'Enable Dark Mode for this site', title: 'Enable Dark Mode for this site', contexts: ['page']}
+            , () => chrome.runtime.lastError
+        );
+        await chrome.contextMenus.create(
+            {id: 'Enable Dark Mode for the current site domain', title: 'Enable Dark Mode for the current site domain', contexts: ['page']}
+            , () => chrome.runtime.lastError
+        );
+    }
+    else if (!tabsGlobalSettings[tab.url]?.darkMode && !domainGlobalSettings[hostNameWithProtocol]?.darkMode) {
+        console.log('reset context!');
+        await chrome.contextMenus.remove('Disable Dark Mode for this site', () => chrome.runtime.lastError);
+        await chrome.contextMenus.remove('Disable Dark Mode for the current site domain', () => chrome.runtime.lastError);
+        await chrome.contextMenus.create(
+            {id: 'Enable Dark Mode for this site', title: 'Enable Dark Mode for this site', contexts: ['page']}
+            , () => chrome.runtime.lastError
+        );
+        await chrome.contextMenus.create(
+            {id: 'Enable Dark Mode for the current site domain', title: 'Enable Dark Mode for the current site domain', contexts: ['page']}
+            , () => chrome.runtime.lastError
+        );
+    }
+    else if (domainGlobalSettings[hostNameWithProtocol] && domainGlobalSettings[hostNameWithProtocol].darkMode === true) {
+        await chrome.contextMenus.remove('Disable Dark Mode for this site', () => chrome.runtime.lastError);
+        await chrome.contextMenus.remove('Enable Dark Mode for this site', () => chrome.runtime.lastError);
+        await chrome.contextMenus.remove('Enable Dark Mode for the current site domain', () => chrome.runtime.lastError);
+        await chrome.contextMenus.create(
+            {id: 'Disable Dark Mode for the current site domain', title: 'Disable Dark Mode for the current site domain', contexts: ['page']}
+            , () => chrome.runtime.lastError
+        );
+    }
+    else if (tabsGlobalSettings[tab.url] && tabsGlobalSettings[tab.url].darkMode === true) {
+        await chrome.contextMenus.remove('Enable Dark Mode for this site', () => chrome.runtime.lastError);
+        await chrome.contextMenus.remove('Disable Dark Mode for the current site domain', () => chrome.runtime.lastError);
+        await chrome.contextMenus.create(
+            {id: 'Disable Dark Mode for this site', title: 'Disable Dark Mode for this site', contexts: ['page']}
+            , () => chrome.runtime.lastError
+        );
+        await chrome.contextMenus.create(
+            {id: 'Enable Dark Mode for the current site domain', title: 'Enable Dark Mode for the current site domain', contexts: ['page']}
+            , () => chrome.runtime.lastError
+        );
+    }
+
     await chrome.contextMenus.create(
-        {id: 'Enable Dark Mode for this site', title: 'Enable Dark Mode for this site', contexts: ['page']}
+        {id: 'window-manager-save', title: 'Save Selected Tabs in New window', contexts: ['page']}
         , () => chrome.runtime.lastError
     );
-    await chrome.contextMenus.create(
-        {id: 'Enable Dark Mode for the current site domain', title: 'Enable Dark Mode for the current site domain', contexts: ['page']}
-        , () => chrome.runtime.lastError
-    )
-})();
+
+    await createAddSelectedTabToSavedWindowContextMenuItem();
+}
 
 async function handleWindowOpenningRequest(windowNameToOpen) {
     await chrome.windows.create({url: (await getSavedWindows()).find(e => e.name == windowNameToOpen).tabs.map(e => e.url), state: 'maximized'});
@@ -125,29 +184,9 @@ async function createAddSelectedTabToSavedWindowContextMenuItem() {
 
 async function tabHighlightedListener(info) {
     console.log('info: ', info);
-    
-    try {
-        await chrome.contextMenus.remove(
-            'window-manager-save'
-        );
-    }
-    catch(e) {
-        console.warn('no id found');
-    }
-    try {
-        await chrome.contextMenus.remove(
-            'add-selected-tab-to-window'
-        );
-    }
-    catch(e) {
-        console.warn('no id found');
-    }
-    await chrome.contextMenus.create(
-        {id: 'window-manager-save', title: 'Save Selected Tabs in New window', contexts: ['page']}
-        , () => chrome.runtime.lastError
-    );
-    await createAddSelectedTabToSavedWindowContextMenuItem();
+    await initContextMenu();
     let selectedTabs = (await chrome.tabs.query({highlighted: true, currentWindow: true})).map((e) => {
+        chrome.tabs.sendMessage(e.id, {data: "check-dark-mode-state"});
         return {
             id: e.id,
             url: e.pendingUrl || e.url
@@ -177,60 +216,44 @@ chrome.runtime.onConnect.addListener(function (port) {
   }
 });
 
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {    
+async function addSelectedTabToWindowContextMenu(info) {
+    let savedWindows = await getSavedWindows();
+    let savedWindowIndex = savedWindows.findIndex(e => {
+        return e.name == info.menuItemId.substring('add-selected-tab-to-window-'.length)
+    });
+    let previouslySelectedTabs = (await chrome.storage.local.get('selectedTabs'))['selectedTabs'];
+    let savedWindow = savedWindows[savedWindowIndex];
+    savedWindow.tabs.push(...previouslySelectedTabs);
+    savedWindows[savedWindowIndex] = savedWindow;
+    await persist({
+        savedWindows
+    });
+}
+
+async function saveCurrentWindow() {
+    chrome.sidePanel.open({ windowId: tab.windowId });
+    await chrome.action.openPopup({});
+}
+
+chrome.contextMenus.onClicked.addListener(async (info) => {    
     try {
         if (info.menuItemId == 'window-manager-save') {
-            chrome.sidePanel.open({ windowId: tab.windowId });
-            await chrome.action.openPopup({});
+            saveCurrentWindow();
         }
         else if (info.menuItemId.startsWith('add-selected-tab-to-window-')) {
-            let savedWindows = await getSavedWindows();
-            let savedWindowIndex = savedWindows.findIndex(e => {
-                return e.name == info.menuItemId.substring('add-selected-tab-to-window-'.length)
-            });
-            let previouslySelectedTabs = (await chrome.storage.local.get('selectedTabs'))['selectedTabs'];
-            let savedWindow = savedWindows[savedWindowIndex];
-            savedWindow.tabs.push(...previouslySelectedTabs);
-            savedWindows[savedWindowIndex] = savedWindow;
-            await persist({
-                savedWindows
-            });
+            addSelectedTabToWindowContextMenu(info);
         }
         else if (info.menuItemId == 'Enable Dark Mode for this site') {
-            (async () => {
-                const [tab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
-                await chrome.tabs.sendMessage(tab.id, {data: "enable-dark-mode-for-this-site"});
-                let tabsGlobalSettings = await get('tabsGlobalSettings');
-                if (!tabsGlobalSettings) {
-                    tabsGlobalSettings = {};
-                }
-                tabsGlobalSettings[tab.url] = {
-                    darkMode: true
-                };
-                
-                await persist({
-                    tabsGlobalSettings
-                });
-            })();
+            handleSiteDarkMode();
         }
         else if (info.menuItemId == 'Enable Dark Mode for the current site domain') {
-            (async () => {
-                const [tab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
-                await chrome.tabs.sendMessage(tab.id, {data: "enable-dark-mode-for-the-current-site-domain"});
-                let domainGlobalSettings = await get('domainGlobalSettings');
-                if (!domainGlobalSettings) {
-                    domainGlobalSettings = {};
-                }
-                let hostname = new URL(tab.url).hostname;
-                let hostNameWithProtocol = tab.url.substring(0, tab.url.indexOf(':')) + '://' + hostname;
-                domainGlobalSettings[hostNameWithProtocol] = {
-                    darkMode: true
-                };
-                
-                await persist({
-                    domainGlobalSettings
-                });
-            })();
+            handleDomainDarkMode();
+        }
+        else if (info.menuItemId == 'Disable Dark Mode for this site') {
+            handleSiteDarkModeDisable();
+        }
+        else if (info.menuItemId == 'Disable Dark Mode for the current site domain') {
+            handleDomainDarkModeDisable();
         }
     }
     catch(e) {
@@ -238,4 +261,85 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     }
 });
 
-chrome.tabs.onHighlighted.addListener(tabHighlightedListener)
+async function handleSiteDarkMode() {
+    const [tab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
+    
+    let tabsGlobalSettings = await get('tabsGlobalSettings');
+    if (!tabsGlobalSettings) {
+        tabsGlobalSettings = {};
+    }
+    tabsGlobalSettings[tab.url] = {
+        darkMode: true
+    };
+    
+    await persist({
+        tabsGlobalSettings
+    });
+
+    await chrome.tabs.sendMessage(tab.id, {data: "enable-dark-mode-for-this-site"});
+
+    await initContextMenu();
+}
+
+async function handleSiteDarkModeDisable() {
+    const [tab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
+    
+    let tabsGlobalSettings = await get('tabsGlobalSettings');
+    
+    tabsGlobalSettings[tab.url].darkMode = undefined;
+    
+    await persist({
+        tabsGlobalSettings
+    });
+
+    await chrome.tabs.sendMessage(tab.id, {data: "disable-dark-mode-for-this-site"});
+    
+    await initContextMenu();
+}
+
+async function handleDomainDarkMode() {
+    const [tab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
+    
+    let domainGlobalSettings = await get('domainGlobalSettings');
+    if (!domainGlobalSettings) {
+        domainGlobalSettings = {};
+    }
+    const hostNameWithProtocol = getHostNameWithProtocolFromCurrentUrl(tab);
+    domainGlobalSettings[hostNameWithProtocol] = {
+        darkMode: true
+    };
+    
+    await persist({
+        domainGlobalSettings
+    });
+
+    await chrome.tabs.sendMessage(tab.id, {data: "enable-dark-mode-for-the-current-site-domain"});
+
+    await initContextMenu();
+}
+
+async function handleDomainDarkModeDisable() {
+    const [tab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
+    
+    let domainGlobalSettings = await get('domainGlobalSettings');
+
+    const hostNameWithProtocol = getHostNameWithProtocolFromCurrentUrl(tab);
+    domainGlobalSettings[hostNameWithProtocol].darkMode = undefined;
+    
+    await persist({
+        domainGlobalSettings
+    });
+
+    await chrome.tabs.sendMessage(tab.id, {data: "disable-dark-mode-for-the-current-site-domain"});
+
+    await initContextMenu();
+}
+
+function getHostNameWithProtocolFromCurrentUrl(tab) {
+    let hostname = new URL(tab.url).hostname;
+    let hostNameWithProtocol = tab.url.substring(0, tab.url.indexOf(':')) + '://' + hostname;
+
+    return hostNameWithProtocol;
+}
+
+chrome.tabs.onHighlighted.addListener(tabHighlightedListener);
