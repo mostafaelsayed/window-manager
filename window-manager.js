@@ -182,6 +182,12 @@ async function createAddSelectedTabToSavedWindowContextMenuItem() {
     }
 }
 
+async function windowFocusChangeListener() {
+    await initContextMenu();
+}
+
+chrome.windows.onFocusChanged.addListener(windowFocusChangeListener);
+
 async function tabHighlightedListener(info) {
     console.log('info: ', info);
     await initContextMenu();
