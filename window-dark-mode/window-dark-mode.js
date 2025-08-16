@@ -37,21 +37,6 @@ async function init() {
     }
 }
 
-const config = {
-  childList: true,
-  subtree: true
-};
-const observer = new MutationObserver((mutationsList) => {
-  mutationsList.forEach((mutation) => {
-    console.log('Content has changed:');
-        setTimeout(() => {
-            init();
-        }, 2000);
-  });
-});
-
-observer.observe(document, config);
-
 function setDarkMode() {
     document.body.classList.add('window-manager-dark-mode');
 }
