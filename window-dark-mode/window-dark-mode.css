@@ -1,34 +1,22 @@
+@import url('vars.css');
+
 .window-manager-dark-mode {
-    background-color: #1a1a1aff !important;
-    color: white !important;
-}
-
-.window-manager-dark-mode *:not(img) {
-    background-color: #1a1a1aff !important;
-    color: white !important;
-}
-.window-manager-dark-mode a {
-  color: #0067cd !important;
-}
-.window-manager-dark-mode a *:not(img) {
-  color: #0067cd !important;
-}
-.window-manager-dark-mode code {
-    background-color: grey !important;
-}
-
-.window-manager-dark-mode code span {
-    background-color: grey !important;
-}
-
-.window-manager-dark-mode pre {
-    background-color: grey !important;
-}
-
-.window-manager-dark-mode pre span {
-    background-color: grey !important;
-}
-
-.window-manager-dark-mode img {
-    background-color: white !important;
+    background-color: var(--dark-mode-background-color) !important;
+    color: var(--dark-mode-text-color) !important;
+    & *:not(img) {
+        background-color: var(--dark-mode-background-color) !important;
+        color: var(--dark-mode-text-color) !important;
+    }
+    & a, a *:not(img) {
+        color: var(--dark-mode-link-text-color) !important;
+    }
+    & a:hover {
+        background-color: var(--dark-mode-background-color) !important;
+    }
+    & code, code span, pre, pre span {
+        background-color: var(--dark-mode-code-background-color) !important;
+    }
+    & *:has(a):hover {
+        background-color: var(--dark-mode-background-color) !important;
+    }
 }

@@ -4,7 +4,7 @@ chrome.runtime.onMessage.addListener(
             "from a content script:" + sender.tab.url :
             "from the extension");
         if (request.data === "enable-dark-mode-for-this-site" || request.data == 'enable-dark-mode-for-the-current-site-domain') {
-            setDarkMode();
+            enableDarkMode();
             sendResponse({ 'done': true });
         }
     }
@@ -19,26 +19,35 @@ async function get(key) {
 }
 
 async function init() {
-    const tabsGlobalSettings = await get('tabsGlobalSettings');
-    const url = window.location.href;
-    if (tabsGlobalSettings && tabsGlobalSettings[url] && tabsGlobalSettings[url].darkMode === true ) {
-        setDarkMode();
-    }
-    else {
-        const domainGlobalSettings = await get('domainGlobalSettings');
+    try {
+        const tabsGlobalSettings = await get('tabsGlobalSettings');
         const url = window.location.href;
-        if (domainGlobalSettings) {
-            for (let key in domainGlobalSettings) {
-                if (url.startsWith(key)) {
-                    setDarkMode();
+        if (tabsGlobalSettings && tabsGlobalSettings[url] && tabsGlobalSettings[url].darkMode === true ) {
+            enableDarkMode();
+        }
+        else {
+            const domainGlobalSettings = await get('domainGlobalSettings');
+            const url = window.location.href;
+            if (domainGlobalSettings) {
+                for (let key in domainGlobalSettings) {
+                    if (url.startsWith(key)) {
+                        enableDarkMode();
+                    }
                 }
             }
         }
     }
+    catch(e) {
+        console.warn('init window dark mode warning: ', e.message);
+    }
 }
 
-function setDarkMode() {
+function enableDarkMode() {
     document.body.classList.add('window-manager-dark-mode');
+}
+
+function disableDarkMode() {
+    document.body.classList.remove('window-manager-dark-mode');
 }
 
 init();
